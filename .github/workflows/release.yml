@@ -38,6 +38,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      attestations: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -56,6 +57,11 @@ jobs:
 
       - name: Build package
         run: uv build --no-sources
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: 'dist/*'
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.11.0

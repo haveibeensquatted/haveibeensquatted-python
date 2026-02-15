@@ -61,7 +61,7 @@ jobs:
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v3
         with:
-          subject-path: 'dist/*'
+          subject-path: "dist/*"
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.11.0
+        uses: pypa/gh-action-pypi-publish@v1.13.0

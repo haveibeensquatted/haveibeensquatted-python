@@ -33,33 +33,6 @@ PHISHING_THRESHOLD = 0.5
 PARKED_THRESHOLD = 0.5
 
 
-def resolve_api_key(explicit_api_key: str | None) -> str | None:
-    if explicit_api_key:
-        return explicit_api_key
-    return os.getenv("HIBS_API_KEY")
-
-
-def configure_logging(log_level: str) -> None:
-    logging.basicConfig(
-        level=getattr(logging, log_level.upper()),
-        format="%(asctime)s %(levelname)s %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-
-def log_common_error(exc: Exception) -> None:
-    if isinstance(exc, RateLimitError):
-        logging.error("rate limited (retry_after=%s limit=%s)", exc.retry_after, exc.limit)
-        return
-    if isinstance(exc, HTTPError):
-        logging.error("request failed: %s", exc)
-        return
-    if isinstance(exc, URLError):
-        logging.error("network error: %s", exc)
-        return
-    logging.error("unexpected error: %s", exc)
-
-
 async def analyze_domain(domain: str, api_key: str) -> None:
     """Perform comprehensive analysis of a domain.
 
@@ -144,8 +117,16 @@ async def analyze_domain(domain: str, api_key: str) -> None:
                         status = f" ({redirect.status})" if redirect.status else ""
                         logging.info("redirect %d: %s%s", i + 1, redirect.url, status)
 
-    except Exception as e:
-        log_common_error(e)
+    except Exception as exc:
+        match exc:
+            case RateLimitError():
+                logging.error("rate limited (retry_after=%s limit=%s)", exc.retry_after, exc.limit)
+            case HTTPError():
+                logging.error("request failed: %s", exc)
+            case URLError():
+                logging.error("network error: %s", exc)
+            case _:
+                logging.error("unexpected error: %s", exc)
         return
 
     # concise summary
@@ -194,9 +175,13 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    configure_logging(args.log_level)
+    logging.basicConfig(
+        level=getattr(logging, args.log_level.upper()),
+        format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
-    api_key = resolve_api_key(args.api_key)
+    api_key = args.api_key or os.getenv("HIBS_API_KEY")
     if not api_key:
         logging.error("HIBS_API_KEY not set; set the environment variable or pass --api-key")
         raise SystemExit(1)

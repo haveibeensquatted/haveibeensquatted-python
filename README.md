@@ -267,7 +267,7 @@ except ValueError as e:
 
 ### API Key Scopes
 
-API keys can be restricted to specific scopes. Each endpoint requires a specific scope
+API keys can be restricted to specific scopes. Each endpoint requires a specific scope:
 
 - `lookup:squat` - Required for `squat()` method
 - `lookup:nxdomain` - Required for `nxdomain()` method
@@ -312,7 +312,8 @@ from haveibeensquatted import (
 
 ## Pydantic integration
 
-You can validate SDK dataclasses with Pydantic v2 using a `TypeAdapter`
+While the SDK uses Python dataclasses (not Pydantic `BaseModel`), you can validate API
+response dicts into SDK types using Pydantic v2's `TypeAdapter`.
 
 ```python
 from pydantic import TypeAdapter
@@ -322,7 +323,8 @@ adapter = TypeAdapter(CTSearchResult)
 result = adapter.validate_python(payload_dict)
 ```
 
-Or wrap SDK dataclasses in your own `BaseModel`
+To wrap SDK dataclasses in your own `BaseModel`, use `model_config = ConfigDict(from_attributes=True)`
+when passing existing dataclass instances. For dict input, Pydantic validates recursively.
 
 ```python
 from pydantic import BaseModel, ConfigDict
@@ -332,7 +334,11 @@ class UsageWrapper(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     usage: UsageResponse
 
+# From dict (payload_dict must match UsageResponse structure)
 wrapped = UsageWrapper.model_validate({"usage": payload_dict})
+
+# From existing dataclass instance
+wrapped = UsageWrapper(usage=existing_usage_response)
 ```
 
 ## Development

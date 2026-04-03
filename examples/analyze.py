@@ -18,12 +18,46 @@ import asyncio
 import logging
 import os
 
-from haveibeensquatted import HaveIBeenSquatted, MetaKind, Operation
+from haveibeensquatted import (
+    HaveIBeenSquatted,
+    HTTPError,
+    MetaKind,
+    Operation,
+    RateLimitError,
+    URLError,
+)
 
 # Classification thresholds
 LEGITIMATE_THRESHOLD = 0.7
 PHISHING_THRESHOLD = 0.5
 PARKED_THRESHOLD = 0.5
+
+
+def resolve_api_key(explicit_api_key: str | None) -> str | None:
+    if explicit_api_key:
+        return explicit_api_key
+    return os.getenv("HIBS_API_KEY")
+
+
+def configure_logging(log_level: str) -> None:
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper()),
+        format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+
+def log_common_error(exc: Exception) -> None:
+    if isinstance(exc, RateLimitError):
+        logging.error("rate limited (retry_after=%s limit=%s)", exc.retry_after, exc.limit)
+        return
+    if isinstance(exc, HTTPError):
+        logging.error("request failed: %s", exc)
+        return
+    if isinstance(exc, URLError):
+        logging.error("network error: %s", exc)
+        return
+    logging.error("unexpected error: %s", exc)
 
 
 async def analyze_domain(domain: str, api_key: str) -> None:
@@ -111,7 +145,7 @@ async def analyze_domain(domain: str, api_key: str) -> None:
                         logging.info("redirect %d: %s%s", i + 1, redirect.url, status)
 
     except Exception as e:
-        logging.error("analysis failed: %s", e)
+        log_common_error(e)
         return
 
     # concise summary
@@ -145,7 +179,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--api-key",
         dest="api_key",
-        default=os.getenv("HIBS_API_KEY"),
+        default=None,
         help="API key (defaults to HIBS_API_KEY env var)",
     )
     parser.add_argument(
@@ -160,13 +194,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    logging.basicConfig(
-        level=getattr(logging, args.log_level.upper()),
-        format="%(asctime)s %(levelname)s %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    configure_logging(args.log_level)
 
-    if not args.api_key:
+    api_key = resolve_api_key(args.api_key)
+    if not api_key:
         logging.error("HIBS_API_KEY not set; set the environment variable or pass --api-key")
         raise SystemExit(1)
 
@@ -175,7 +206,7 @@ def main() -> None:
         logging.error("domain cannot be empty")
         raise SystemExit(1)
 
-    asyncio.run(analyze_domain(domain, args.api_key))
+    asyncio.run(analyze_domain(domain, api_key))
 
 
 if __name__ == "__main__":

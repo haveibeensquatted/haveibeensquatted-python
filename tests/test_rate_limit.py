@@ -1,10 +1,10 @@
-"""Tests for rate limiting behavior."""
+"""Tests for rate limiting and timeout behavior."""
 
 import urllib.request
 
 import pytest
 
-from haveibeensquatted.http import DefaultHttpClient, RateLimitError
+from haveibeensquatted.http import DefaultHttpClient, RateLimitError, URLError
 
 
 class _FakeResponse:
@@ -25,7 +25,7 @@ class _FakeResponse:
 
 @pytest.mark.asyncio
 async def test_get_rate_limit_error(monkeypatch):
-    def _fake_urlopen(_req):
+    def _fake_urlopen(_req, **kwargs):
         return _FakeResponse(429, {"Retry-After": "60", "X-RateLimit-Limit": "100"})
 
     monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
@@ -40,7 +40,7 @@ async def test_get_rate_limit_error(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_stream_get_rate_limit_error(monkeypatch):
-    def _fake_urlopen(_req):
+    def _fake_urlopen(_req, **kwargs):
         return _FakeResponse(429, {"Retry-After": "150"})
 
     monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
@@ -51,3 +51,37 @@ async def test_stream_get_rate_limit_error(monkeypatch):
             pass
 
     assert exc.value.retry_after == 150.0
+
+
+@pytest.mark.asyncio
+async def test_get_timeout_error_is_wrapped(monkeypatch):
+    def _fake_urlopen(_req, **kwargs):
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
+    client = DefaultHttpClient()
+
+    with pytest.raises(URLError, match="URL error: timed out"):
+        await client.get("https://example.com", {})
+
+
+class _TimeoutOnReadResponse(_FakeResponse):
+    def __init__(self):
+        super().__init__(200, {})
+        self.reason = "OK"
+
+    def read(self, _size: int | None = None) -> bytes:
+        raise TimeoutError("stream timed out")
+
+
+@pytest.mark.asyncio
+async def test_stream_get_timeout_error_is_wrapped(monkeypatch):
+    def _fake_urlopen(_req, **kwargs):
+        return _TimeoutOnReadResponse()
+
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
+    client = DefaultHttpClient()
+
+    with pytest.raises(URLError, match="URL error: stream timed out"):
+        async for _ in client.stream_get("https://example.com", {}):
+            pass

@@ -218,7 +218,11 @@ print(API_VERSION) # v1
 
 ## Custom HTTP client
 
-The SDK uses a protocol-based HTTP client that allows you to use your preferred HTTP library
+The SDK uses a protocol-based HTTP client that allows you to use your preferred HTTP library.
+
+The built-in `DefaultHttpClient` applies a 3-minute timeout for streaming requests and a
+15-second timeout for non-streaming requests. Provide a custom `http_client` to override
+these timeouts or use a different HTTP library (e.g., httpx, aiohttp).
 
 ```python
 import httpx

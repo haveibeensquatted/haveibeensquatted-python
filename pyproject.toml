@@ -34,9 +34,6 @@ Issues = "https://github.com/haveibeensquatted/haveibeensquatted-python/issues"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.build]
-packages = ["src/haveibeensquatted"]
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/haveibeensquatted"]
 
@@ -44,10 +41,8 @@ packages = ["src/haveibeensquatted"]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
-    "datamodel-code-generator>=0.25.0",
     "jsonschema>=4.20.0",
-    "ruff>=0.3.0",
-    "pdoc>=14.0.0",
+    "ruff>=0.15.0,<0.16",
     "pre-commit>=3.5.0",
 ]
 

@@ -347,8 +347,9 @@ wrapped = UsageWrapper(usage=existing_usage_response)
 git clone https://github.com/haveibeensquatted/haveibeensquatted-python.git
 cd haveibeensquatted-python
 uv sync
-uv run pytest
-uv run ruff check
+make test
+make lint
+make typecheck  # ruff type-checking rules
 ```
 
 ## API reference

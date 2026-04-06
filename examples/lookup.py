@@ -18,7 +18,14 @@ import asyncio
 import logging
 import os
 
-from haveibeensquatted import HaveIBeenSquatted, MetaKind, Operation
+from haveibeensquatted import (
+    HaveIBeenSquatted,
+    HTTPError,
+    MetaKind,
+    Operation,
+    RateLimitError,
+    URLError,
+)
 
 # Progress data minimum length (current, total)
 MIN_PROGRESS_DATA_LENGTH = 2
@@ -90,8 +97,16 @@ async def analyze_squatting(domain: str, api_key: str) -> None:
                     classification.parked,
                 )
 
-    except Exception as e:
-        logging.error("analysis failed: %s", e)
+    except Exception as exc:
+        match exc:
+            case RateLimitError():
+                logging.error("rate limited (retry_after=%s limit=%s)", exc.retry_after, exc.limit)
+            case HTTPError():
+                logging.error("request failed: %s", exc)
+            case URLError():
+                logging.error("network error: %s", exc)
+            case _:
+                logging.error("unexpected error: %s", exc)
         return
 
     percentage = (results_found / total_permutations) * 100 if total_permutations else 0.0
@@ -109,7 +124,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--api-key",
         dest="api_key",
-        default=os.getenv("HIBS_API_KEY"),
+        default=None,
         help="API key (defaults to HIBS_API_KEY env var)",
     )
     parser.add_argument(
@@ -124,14 +139,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    # Configure logging
     logging.basicConfig(
         level=getattr(logging, args.log_level.upper()),
         format="%(asctime)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    if not args.api_key:
+    api_key = args.api_key or os.getenv("HIBS_API_KEY")
+    if not api_key:
         logging.error("HIBS_API_KEY not set; set the environment variable or pass --api-key")
         raise SystemExit(1)
 
@@ -140,7 +155,7 @@ def main() -> None:
         logging.error("domain cannot be empty")
         raise SystemExit(1)
 
-    asyncio.run(analyze_squatting(domain, args.api_key))
+    asyncio.run(analyze_squatting(domain, api_key))
 
 
 if __name__ == "__main__":

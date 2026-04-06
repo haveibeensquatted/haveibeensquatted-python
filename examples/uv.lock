@@ -4,19 +4,18 @@ requires-python = ">=3.11"
 
 [[package]]
 name = "haveibeensquatted"
-version = "0.2.0"
+version = "0.1.0"
 source = { editable = "../" }
 
 [package.metadata]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "datamodel-code-generator", specifier = ">=0.25.0" },
     { name = "jsonschema", specifier = ">=4.20.0" },
-    { name = "pdoc", specifier = ">=14.0.0" },
+    { name = "pre-commit", specifier = ">=3.5.0" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.23.0" },
-    { name = "ruff", specifier = ">=0.3.0" },
+    { name = "ruff", specifier = ">=0.15.0,<0.16" },
 ]
 
 [[package]]

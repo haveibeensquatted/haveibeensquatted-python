@@ -218,7 +218,11 @@ print(API_VERSION) # v1
 
 ## Custom HTTP client
 
-The SDK uses a protocol-based HTTP client that allows you to use your preferred HTTP library
+The SDK uses a protocol-based HTTP client that allows you to use your preferred HTTP library.
+
+The built-in `DefaultHttpClient` applies a 3-minute timeout for streaming requests and a
+15-second timeout for non-streaming requests. Provide a custom `http_client` to override
+these timeouts or use a different HTTP library (e.g., httpx, aiohttp).
 
 ```python
 import httpx
@@ -263,7 +267,7 @@ except ValueError as e:
 
 ### API Key Scopes
 
-API keys can be restricted to specific scopes. Each endpoint requires a specific scope
+API keys can be restricted to specific scopes. Each endpoint requires a specific scope:
 
 - `lookup:squat` - Required for `squat()` method
 - `lookup:nxdomain` - Required for `nxdomain()` method
@@ -308,7 +312,8 @@ from haveibeensquatted import (
 
 ## Pydantic integration
 
-You can validate SDK dataclasses with Pydantic v2 using a `TypeAdapter`
+While the SDK uses Python dataclasses (not Pydantic `BaseModel`), you can validate API
+response dicts into SDK types using Pydantic v2's `TypeAdapter`.
 
 ```python
 from pydantic import TypeAdapter
@@ -318,7 +323,8 @@ adapter = TypeAdapter(CTSearchResult)
 result = adapter.validate_python(payload_dict)
 ```
 
-Or wrap SDK dataclasses in your own `BaseModel`
+To wrap SDK dataclasses in your own `BaseModel`, use `model_config = ConfigDict(from_attributes=True)`
+when passing existing dataclass instances. For dict input, Pydantic validates recursively.
 
 ```python
 from pydantic import BaseModel, ConfigDict
@@ -328,7 +334,11 @@ class UsageWrapper(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     usage: UsageResponse
 
+# From dict (payload_dict must match UsageResponse structure)
 wrapped = UsageWrapper.model_validate({"usage": payload_dict})
+
+# From existing dataclass instance
+wrapped = UsageWrapper(usage=existing_usage_response)
 ```
 
 ## Development
@@ -337,8 +347,9 @@ wrapped = UsageWrapper.model_validate({"usage": payload_dict})
 git clone https://github.com/haveibeensquatted/haveibeensquatted-python.git
 cd haveibeensquatted-python
 uv sync
-uv run pytest
-uv run ruff check
+make test
+make lint
+make typecheck  # ruff type-checking rules
 ```
 
 ## API reference

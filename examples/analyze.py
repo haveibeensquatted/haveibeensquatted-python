@@ -18,7 +18,14 @@ import asyncio
 import logging
 import os
 
-from haveibeensquatted import HaveIBeenSquatted, MetaKind, Operation
+from haveibeensquatted import (
+    HaveIBeenSquatted,
+    HTTPError,
+    MetaKind,
+    Operation,
+    RateLimitError,
+    URLError,
+)
 
 # Classification thresholds
 LEGITIMATE_THRESHOLD = 0.7
@@ -110,8 +117,16 @@ async def analyze_domain(domain: str, api_key: str) -> None:
                         status = f" ({redirect.status})" if redirect.status else ""
                         logging.info("redirect %d: %s%s", i + 1, redirect.url, status)
 
-    except Exception as e:
-        logging.error("analysis failed: %s", e)
+    except Exception as exc:
+        match exc:
+            case RateLimitError():
+                logging.error("rate limited (retry_after=%s limit=%s)", exc.retry_after, exc.limit)
+            case HTTPError():
+                logging.error("request failed: %s", exc)
+            case URLError():
+                logging.error("network error: %s", exc)
+            case _:
+                logging.error("unexpected error: %s", exc)
         return
 
     # concise summary
@@ -145,7 +160,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--api-key",
         dest="api_key",
-        default=os.getenv("HIBS_API_KEY"),
+        default=None,
         help="API key (defaults to HIBS_API_KEY env var)",
     )
     parser.add_argument(
@@ -166,7 +181,8 @@ def main() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    if not args.api_key:
+    api_key = args.api_key or os.getenv("HIBS_API_KEY")
+    if not api_key:
         logging.error("HIBS_API_KEY not set; set the environment variable or pass --api-key")
         raise SystemExit(1)
 
@@ -175,7 +191,7 @@ def main() -> None:
         logging.error("domain cannot be empty")
         raise SystemExit(1)
 
-    asyncio.run(analyze_domain(domain, args.api_key))
+    asyncio.run(analyze_domain(domain, api_key))
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ using Python's standard library. Users can provide their own HTTP client
 implementations for custom behavior.
 """
 
+import socket
 import urllib.error
 import urllib.request
 from collections.abc import AsyncIterator, Mapping
@@ -13,6 +14,10 @@ from typing import Protocol, runtime_checkable
 # HTTP status codes
 HTTP_STATUS_TOO_MANY_REQUESTS = 429
 HTTP_STATUS_BAD_REQUEST = 400
+
+# Default timeouts (seconds)
+DEFAULT_STREAM_TIMEOUT = 180  # 3 minutes for streaming requests
+DEFAULT_GET_TIMEOUT = 15  # 15 seconds for non-streaming requests
 
 
 @runtime_checkable
@@ -77,6 +82,13 @@ class DefaultHttpClient:
 
     This implementation uses urllib.request and provides async streaming
     capabilities. It's suitable for most use cases and has minimal dependencies.
+
+    Default timeouts are applied to avoid indefinite hangs:
+    - Streaming requests: 3 minutes
+    - Non-streaming requests: 15 seconds
+
+    Provide a custom ``http_client`` when constructing the SDK client to override
+    these timeouts or use a different HTTP library (e.g., httpx, aiohttp).
     """
 
     async def stream_get(self, url: str, headers: dict[str, str]) -> AsyncIterator[bytes]:
@@ -97,8 +109,8 @@ class DefaultHttpClient:
         req = urllib.request.Request(url, headers=headers)
 
         try:
-            # Open connection
-            with urllib.request.urlopen(req) as response:
+            # Open connection (3-minute timeout for streaming)
+            with urllib.request.urlopen(req, timeout=DEFAULT_STREAM_TIMEOUT) as response:
                 # Check if response is successful
                 if response.status == HTTP_STATUS_TOO_MANY_REQUESTS:
                     retry_after = _parse_retry_after(response.headers)
@@ -127,16 +139,18 @@ class DefaultHttpClient:
                 ) from e
             # Re-raise HTTP errors with more context
             raise HTTPError(f"HTTP {e.code}: {e.reason}") from e
+        except TimeoutError as e:
+            raise _as_url_error(e) from e
         except urllib.error.URLError as e:
             # Re-raise URL errors with more context
-            raise URLError(f"URL error: {e.reason}") from e
+            raise _as_url_error(e) from e
 
     async def get(self, url: str, headers: dict[str, str]) -> tuple[bytes, Mapping[str, str]]:
         """Perform HTTP GET request using urllib.request."""
         req = urllib.request.Request(url, headers=headers)
 
         try:
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req, timeout=DEFAULT_GET_TIMEOUT) as response:
                 if response.status == HTTP_STATUS_TOO_MANY_REQUESTS:
                     retry_after = _parse_retry_after(response.headers)
                     limit = _parse_rate_limit(response.headers)
@@ -157,8 +171,10 @@ class DefaultHttpClient:
                     "Rate limit exceeded", retry_after=retry_after, limit=limit
                 ) from e
             raise HTTPError(f"HTTP {e.code}: {e.reason}") from e
+        except TimeoutError as e:
+            raise _as_url_error(e) from e
         except urllib.error.URLError as e:
-            raise URLError(f"URL error: {e.reason}") from e
+            raise _as_url_error(e) from e
 
 
 class HTTPError(Exception):
@@ -182,6 +198,13 @@ class RateLimitError(Exception):
         super().__init__(message)
         self.retry_after = retry_after
         self.limit = limit
+
+
+def _as_url_error(exc: urllib.error.URLError | TimeoutError | socket.timeout) -> URLError:
+    reason = getattr(exc, "reason", None)
+    if reason is None:
+        reason = str(exc) or exc.__class__.__name__
+    return URLError(f"URL error: {reason}")
 
 
 def _parse_retry_after(headers: object) -> float | None:

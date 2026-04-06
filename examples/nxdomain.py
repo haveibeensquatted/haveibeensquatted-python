@@ -18,7 +18,14 @@ import asyncio
 import logging
 import os
 
-from haveibeensquatted import HaveIBeenSquatted, MetaKind, Operation
+from haveibeensquatted import (
+    HaveIBeenSquatted,
+    HTTPError,
+    MetaKind,
+    Operation,
+    RateLimitError,
+    URLError,
+)
 
 # Progress data minimum length (current, total)
 MIN_PROGRESS_DATA_LENGTH = 2
@@ -79,8 +86,16 @@ async def check_nxdomains(domain: str, api_key: str) -> None:
                 unregistered_domains.append((perm_domain, perm_kind, distance))
                 logging.info("available: %s (%s, distance=%d)", perm_domain, perm_kind, distance)
 
-    except Exception as e:
-        logging.error("analysis failed: %s", e)
+    except Exception as exc:
+        match exc:
+            case RateLimitError():
+                logging.error("rate limited (retry_after=%s limit=%s)", exc.retry_after, exc.limit)
+            case HTTPError():
+                logging.error("request failed: %s", exc)
+            case URLError():
+                logging.error("network error: %s", exc)
+            case _:
+                logging.error("unexpected error: %s", exc)
         return
 
     # concise summary
@@ -109,7 +124,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--api-key",
         dest="api_key",
-        default=os.getenv("HIBS_API_KEY"),
+        default=None,
         help="API key (defaults to HIBS_API_KEY env var)",
     )
     parser.add_argument(
@@ -130,7 +145,8 @@ def main() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    if not args.api_key:
+    api_key = args.api_key or os.getenv("HIBS_API_KEY")
+    if not api_key:
         logging.error("HIBS_API_KEY not set; set the environment variable or pass --api-key")
         raise SystemExit(1)
 
@@ -139,7 +155,7 @@ def main() -> None:
         logging.error("domain cannot be empty")
         raise SystemExit(1)
 
-    asyncio.run(check_nxdomains(domain, args.api_key))
+    asyncio.run(check_nxdomains(domain, api_key))
 
 
 if __name__ == "__main__":

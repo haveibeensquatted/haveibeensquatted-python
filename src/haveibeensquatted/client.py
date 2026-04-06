@@ -291,7 +291,17 @@ class HaveIBeenSquatted:
         return [self.parser._parse_hydrate_item(item) for item in data]
 
     async def usage(self, minutes: int = 1440) -> UsageResponse:
-        """Get API usage data. Default period: 24 hours (1440 minutes)."""
+        """Get API usage data for a time window in minutes.
+
+        Args:
+            minutes: Usage period in minutes. Defaults to 1440 (24 hours).
+
+        Returns:
+            Parsed usage response containing period, totals, and hourly data.
+
+        Raises:
+            ValueError: If ``minutes`` is not greater than 0.
+        """
         if minutes <= 0:
             raise ValueError("minutes must be greater than 0")
         url = urllib.parse.urljoin(self.base_url + "/", "meta/usage")

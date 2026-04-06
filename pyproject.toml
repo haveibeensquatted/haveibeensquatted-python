@@ -44,6 +44,7 @@ dev = [
     "jsonschema>=4.20.0",
     "ruff>=0.15.0,<0.16",
     "pre-commit>=3.5.0",
+    "pygments>=2.20.0",
 ]
 
 [tool.semantic_release]

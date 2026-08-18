@@ -70,7 +70,25 @@ async def test_parse_and_merge_covers_all_fields():
     if Operation.TECHNOLOGIES in ops_seen:
         expected_fields.add("technologies")
     if Operation.DNS in ops_seen:
-        expected_fields.update({"dns_a", "dns_aaaa", "dns_mx", "dns_txt", "dns_cname", "dns_ns"})
+        expected_fields.update(
+            {
+                "dns_a",
+                "dns_aaaa",
+                "dns_mx",
+                "dns_txt",
+                "dns_cname",
+                "dns_ns",
+                "dns_svcb",
+                "dns_https",
+                "dns_caa",
+                "dns_tlsa",
+                "dns_srv",
+                "dns_naptr",
+                "dns_ptr",
+                "dns_dnskey",
+                "dns_ds",
+            }
+        )
     if Operation.RDAP in ops_seen:
         expected_fields.add("rdap")
     if Operation.SCREENSHOT in ops_seen:
@@ -131,6 +149,24 @@ async def test_parse_and_merge_covers_all_fields():
             covered.add("dns_cname")
         if res.dns_ns is not None:
             covered.add("dns_ns")
+        if res.dns_svcb is not None:
+            covered.add("dns_svcb")
+        if res.dns_https is not None:
+            covered.add("dns_https")
+        if res.dns_caa is not None:
+            covered.add("dns_caa")
+        if res.dns_tlsa is not None:
+            covered.add("dns_tlsa")
+        if res.dns_srv is not None:
+            covered.add("dns_srv")
+        if res.dns_naptr is not None:
+            covered.add("dns_naptr")
+        if res.dns_ptr is not None:
+            covered.add("dns_ptr")
+        if res.dns_dnskey is not None:
+            covered.add("dns_dnskey")
+        if res.dns_ds is not None:
+            covered.add("dns_ds")
         if res.rdap is not None:
             covered.add("rdap")
         if res.screenshot_url:
@@ -205,6 +241,34 @@ async def test_parse_multiple_messages():
     assert messages[2].op == Operation.GEO_IP
     assert isinstance(messages[2].data, GeoIpData)
     assert messages[2].data.ip == "1.2.3.4"
+
+
+@pytest.mark.asyncio
+async def test_parse_current_generic_operations_without_dropping_data():
+    """Preserve current API operations that do not yet have typed payload models."""
+    parser = StreamParser()
+    test_data = (
+        b'{"op":"DomainMetadata","data":{"char_count":7}}\n'
+        b'{"op":"DomainStatus","data":{"status":"active zone"}}\n'
+        b'{"op":"PageRank","data":{"page_rank_integer":6}}\n'
+        b'{"op":"Security","data":{"findings":[]}}\n'
+    )
+
+    async def byte_iter():
+        yield test_data
+
+    messages = [message async for message in parser.parse_stream(byte_iter())]
+
+    assert [message.op for message in messages] == [
+        Operation.DOMAIN_METADATA,
+        Operation.DOMAIN_STATUS,
+        Operation.PAGE_RANK,
+        Operation.SECURITY,
+    ]
+    assert messages[0].data == {"char_count": 7}
+    assert messages[1].data == {"status": "active zone"}
+    assert messages[2].data == {"page_rank_integer": 6}
+    assert messages[3].data == {"findings": []}
 
 
 @pytest.mark.asyncio
@@ -283,6 +347,34 @@ def test_merge_messages():
     assert result.classification.legitimate == 0.8
 
 
+def test_merge_messages_preserves_unmodeled_operation_data():
+    """Keep recognized raw operation payloads when producing a merged result."""
+    parser = StreamParser()
+    domain = Domain(fqdn="example.com", tld="com", domain="example")
+    permutation = Permutation(domain=domain, kind=PermutationKind.ADDITION)
+    messages = [
+        Message(
+            op=Operation.DOMAIN_STATUS,
+            permutation=permutation,
+            data={"status": "active zone"},
+        ),
+        Message(
+            op=Operation.DOMAIN_STATUS,
+            permutation=permutation,
+            data={"status": "registered"},
+        ),
+        Message(op=Operation.SECURITY, permutation=permutation, data={"findings": []}),
+    ]
+
+    result = parser.merge_messages("example.com", messages)
+
+    assert result is not None
+    assert result.unmodeled_operations == {
+        "DomainStatus": [{"status": "active zone"}, {"status": "registered"}],
+        "Security": [{"findings": []}],
+    }
+
+
 def test_parse_dns_records():
     """Test parsing DNS records."""
     parser = StreamParser()
@@ -294,6 +386,15 @@ def test_parse_dns_records():
         "txt": ["v=spf1 include:_spf.example.com ~all"],
         "cname": ["www.example.com"],
         "ns": ["ns1.example.com", "ns2.example.com"],
+        "svcb": ["1 svc.example.com alpn=h2"],
+        "https": ["1 . alpn=h2"],
+        "caa": ["0 issue letsencrypt.org"],
+        "tlsa": ["3 1 1 abcdef"],
+        "srv": ["10 5 443 service.example.com"],
+        "naptr": ["100 10 U E2U+sip !^.*$!sip:info@example.com! ."],
+        "ptr": ["host.example.com"],
+        "dnskey": ["257 3 13 abcdef"],
+        "ds": ["12345 13 2 abcdef"],
     }
 
     dns_records = parser._parse_dns(dns_data)
@@ -305,6 +406,15 @@ def test_parse_dns_records():
     assert dns_records.txt == ["v=spf1 include:_spf.example.com ~all"]
     assert dns_records.cname == ["www.example.com"]
     assert dns_records.ns == ["ns1.example.com", "ns2.example.com"]
+    assert dns_records.svcb == ["1 svc.example.com alpn=h2"]
+    assert dns_records.https == ["1 . alpn=h2"]
+    assert dns_records.caa == ["0 issue letsencrypt.org"]
+    assert dns_records.tlsa == ["3 1 1 abcdef"]
+    assert dns_records.srv == ["10 5 443 service.example.com"]
+    assert dns_records.naptr == ["100 10 U E2U+sip !^.*$!sip:info@example.com! ."]
+    assert dns_records.ptr == ["host.example.com"]
+    assert dns_records.dnskey == ["257 3 13 abcdef"]
+    assert dns_records.ds == ["12345 13 2 abcdef"]
 
 
 def test_parse_redirect_chain():

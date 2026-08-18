@@ -154,6 +154,49 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "dns_svcb": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dns_https": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dns_caa": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dns_tlsa": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dns_srv": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dns_naptr": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dns_ptr": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dns_dnskey": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dns_ds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "unmodeled_operations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {}
+          }
+        },
         "rdap": { "type": "object" },
         "screenshot_url": { "type": "string" },
         "registration_metadata": { "type": "object" },
@@ -179,7 +222,8 @@
         "passive_dns": { "type": "array" },
         "passive_tls": { "type": "object" },
         "certificate_transparency": { "type": "object" }
-      }
+      },
+      "additionalProperties": false
     }
   }
 }

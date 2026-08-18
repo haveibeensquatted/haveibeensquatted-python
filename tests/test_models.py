@@ -55,6 +55,17 @@ class TestEnums:
         assert Operation.PASSIVE_DNS.value == "PassiveDns"
         assert Operation.PASSIVE_TLS.value == "PassiveTls"
         assert Operation.CERTIFICATE_TRANSPARENCY.value == "CertificateTransparency"
+        assert Operation.DOMAIN_STATUS.value == "DomainStatus"
+        assert Operation.PAGE_RANK.value == "PageRank"
+        assert Operation.IDENTIFIERS.value == "Identifiers"
+        assert Operation.SUBDOMAINS.value == "Subdomains"
+        assert Operation.TLS_CHAIN.value == "TlsChain"
+        assert Operation.SITEMAP.value == "Sitemap"
+        assert Operation.CRAWL_META.value == "CrawlMeta"
+        assert Operation.BUSINESS_INTEL.value == "BusinessIntel"
+        assert Operation.PORTS.value == "Ports"
+        assert Operation.SECURITY.value == "Security"
+        assert Operation.DOMAIN_METADATA.value == "DomainMetadata"
 
     def test_meta_kind_enum(self):
         """Test MetaKind enum values."""
@@ -175,6 +186,36 @@ class TestDataClasses:
         assert result.distance == 1
         assert result.http_banner == "nginx/1.18.0"
         assert result.dns_a == ["1.2.3.4"]
+
+    def test_permutation_result_preserves_legacy_positional_field_order(self):
+        """Keep fields added after 0.1.0 from changing existing positional bindings."""
+        legacy_fields = (
+            "permutation",
+            "distance",
+            "ips",
+            "whois",
+            "classification",
+            "http_banner",
+            "technologies",
+            "dns_aaaa",
+            "dns_a",
+            "dns_mx",
+            "dns_txt",
+            "dns_cname",
+            "dns_ns",
+            "rdap",
+            "screenshot_url",
+            "registration_metadata",
+            "redirect_chain",
+            "smtp_metadata",
+            "nxdomain_metadata",
+            "origin_x509",
+            "passive_dns",
+            "passive_tls",
+            "certificate_transparency",
+        )
+
+        assert PermutationResult.__match_args__[: len(legacy_fields)] == legacy_fields
 
     def test_lookup_event(self):
         """Test LookupEvent dataclass."""
@@ -314,6 +355,16 @@ class TestLookupEventSchema:
             dns_txt=["v=spf1 include:_spf.example.com ~all"],
             dns_cname=["www.example.com"],
             dns_ns=["ns1.example.com"],
+            dns_svcb=["1 svc.example.com alpn=h2"],
+            dns_https=["1 . alpn=h2"],
+            dns_caa=["0 issue letsencrypt.org"],
+            dns_tlsa=["3 1 1 abcdef"],
+            dns_srv=["10 5 443 service.example.com"],
+            dns_naptr=["100 10 U E2U+sip !^.*$!sip:info@example.com! ."],
+            dns_ptr=["host.example.com"],
+            dns_dnskey=["257 3 13 abcdef"],
+            dns_ds=["12345 13 2 abcdef"],
+            unmodeled_operations={"DomainStatus": [{"status": "active zone"}]},
             redirect_chain=[{"url": "https://example.com", "status": 301, "kind": "Http"}],
         )
 
@@ -365,6 +416,16 @@ class TestLookupEventSchema:
                 "dns_txt": event.data.dns_txt,
                 "dns_cname": event.data.dns_cname,
                 "dns_ns": event.data.dns_ns,
+                "dns_svcb": event.data.dns_svcb,
+                "dns_https": event.data.dns_https,
+                "dns_caa": event.data.dns_caa,
+                "dns_tlsa": event.data.dns_tlsa,
+                "dns_srv": event.data.dns_srv,
+                "dns_naptr": event.data.dns_naptr,
+                "dns_ptr": event.data.dns_ptr,
+                "dns_dnskey": event.data.dns_dnskey,
+                "dns_ds": event.data.dns_ds,
+                "unmodeled_operations": event.data.unmodeled_operations,
                 "redirect_chain": event.data.redirect_chain,
             },
         }

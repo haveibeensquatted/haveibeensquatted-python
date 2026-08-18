@@ -235,7 +235,22 @@ class HaveIBeenSquatted:
         field: str | None = None,
         include_precert: bool = False,
     ) -> CTSearchResponse:
-        """Search certificate transparency logs."""
+        """Search certificate transparency logs.
+
+        Args:
+            pattern: Regular expression matched against indexed CT names.
+            kind: Search strategy. The current service supports ``regex``.
+            limit: Requested maximum number of results.
+            field: Optional low-level CT name-index selector. This is not a
+                certificate field such as issuer or Common Name; omit it to let
+                the service select the index automatically.
+            include_precert: Compatibility parameter forwarded to the service.
+                The current service does not use it to filter precertificate-only
+                results.
+
+        Returns:
+            Parsed CT search results and the response truncation indicator.
+        """
         if not pattern or not pattern.strip():
             raise ValueError("Pattern cannot be empty")
         params: dict[str, str] = {

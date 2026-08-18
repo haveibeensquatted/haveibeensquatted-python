@@ -1,0 +1,1994 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Have I Been Squatted API",
+    "version": "v1",
+    "summary": "OpenAPI description for the public v1 API surface represented in this repository.",
+    "description": "This specification documents the HTTP wire format used by the v1 API. Lookup endpoints stream newline-delimited JSON objects. Certificate Transparency and usage endpoints return regular JSON bodies.\n",
+    "contact": {
+      "name": "Have I Been Squatted",
+      "email": "ehlo@haveibeensquatted.com",
+      "url": "https://haveibeensquatted.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/haveibeensquatted/haveibeensquatted-python/blob/main/LICENSE"
+    }
+  },
+  "externalDocs": {
+    "description": "API guides and account documentation",
+    "url": "https://docs.haveibeensquatted.com/guides/api/"
+  },
+  "servers": [
+    {
+      "url": "https://api.haveibeensquatted.com/v1",
+      "description": "Production v1 API"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Lookup",
+      "description": "Streaming domain lookup and analysis endpoints."
+    },
+    {
+      "name": "Certificate Transparency",
+      "description": "Search and hydrate certificate transparency records."
+    },
+    {
+      "name": "Usage",
+      "description": "Usage reporting for the authenticated API key."
+    }
+  ],
+  "paths": {
+    "/lookup/squat/{domain}": {
+      "get": {
+        "tags": [
+          "Lookup"
+        ],
+        "summary": "Look up typosquatted permutations for a domain.",
+        "description": "Streams newline-delimited JSON objects as work completes. Each line is a message with an `op` field and operation-specific `data`.\n",
+        "operationId": "lookupSquat",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DomainPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NDJSON stream of lookup result messages. The schema and examples describe one line in the stream.\n",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamMessage"
+                },
+                "examples": {
+                  "sample": {
+                    "summary": "GeoIP result line",
+                    "value": {
+                      "op": "GeoIp",
+                      "permutation": {
+                        "domain": {
+                          "fqdn": "examp1e.com",
+                          "tld": "com",
+                          "domain": "examp1e"
+                        },
+                        "kind": "Replacement"
+                      },
+                      "data": {
+                        "ip": "203.0.113.10",
+                        "asn": {
+                          "number": 64496,
+                          "organization": "Example Networks"
+                        },
+                        "country": {
+                          "continent": "North America",
+                          "iso_code": "US"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "x-line-delimited": true
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/lookup/nxdomain/{domain}": {
+      "get": {
+        "tags": [
+          "Lookup"
+        ],
+        "summary": "Look up unregistered permutations for a domain.",
+        "description": "Streams newline-delimited JSON objects as work completes. Each line is a message with an `op` field and operation-specific `data`.\n",
+        "operationId": "lookupNxdomain",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DomainPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NDJSON stream of lookup result messages. The schema and examples describe one line in the stream.\n",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamMessage"
+                },
+                "examples": {
+                  "sample": {
+                    "summary": "NXDOMAIN metadata line",
+                    "value": {
+                      "op": "Nxdomain",
+                      "permutation": {
+                        "domain": {
+                          "fqdn": "exampel.com",
+                          "tld": "com",
+                          "domain": "exampel"
+                        },
+                        "kind": "Transposition"
+                      },
+                      "data": {
+                        "query": {
+                          "name": "exampel.com",
+                          "type": "A"
+                        },
+                        "trusted": false,
+                        "soa": {
+                          "mname": "ns1.example.net"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "x-line-delimited": true
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/analyze/{domain}": {
+      "get": {
+        "tags": [
+          "Lookup"
+        ],
+        "summary": "Analyze a domain for infrastructure and threat signals.",
+        "description": "Streams newline-delimited JSON objects as work completes. Each line is a message with an `op` field and operation-specific `data`.\n",
+        "operationId": "analyzeDomain",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DomainPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NDJSON stream of analysis messages. The schema and examples describe one line in the stream.\n",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamMessage"
+                },
+                "examples": {
+                  "sample": {
+                    "summary": "DNS result line",
+                    "value": {
+                      "op": "Dns",
+                      "data": {
+                        "a": [
+                          "203.0.113.10"
+                        ],
+                        "aaaa": [],
+                        "mx": [],
+                        "txt": [
+                          "v=spf1 -all"
+                        ],
+                        "cname": [],
+                        "ns": [
+                          "ns1.example.net"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "x-line-delimited": true
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/ct/search": {
+      "get": {
+        "tags": [
+          "Certificate Transparency"
+        ],
+        "summary": "Search certificate transparency names by pattern.",
+        "description": "Returns a JSON array of matching names. The response may include the `X-Has-More-Value` header when more matches exist than were returned in the body for the requested limit.\n",
+        "operationId": "ctSearch",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CtPattern"
+          },
+          {
+            "$ref": "#/components/parameters/CtKind"
+          },
+          {
+            "$ref": "#/components/parameters/CtLimit"
+          },
+          {
+            "$ref": "#/components/parameters/IncludePrecert"
+          },
+          {
+            "$ref": "#/components/parameters/CtField"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Certificate transparency search results.",
+            "headers": {
+              "X-Has-More-Value": {
+                "$ref": "#/components/headers/XHasMoreValue"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CTSearchResult"
+                  }
+                },
+                "examples": {
+                  "sampleResults": {
+                    "summary": "Search results with occurrence metadata",
+                    "value": [
+                      {
+                        "name": "google.example",
+                        "labels": {
+                          "tld": "example",
+                          "etld1": "google.example",
+                          "domain": "google"
+                        },
+                        "is_precert": false,
+                        "log_id": 86,
+                        "index": 3800460171,
+                        "occurrences_count": 1,
+                        "last_seen_ts": 1776777317,
+                        "occurrences": [
+                          {
+                            "log_id": 86,
+                            "kind": 0,
+                            "ts_sec": 1776777317,
+                            "index": 3800460171
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/ct/search/domains": {
+      "get": {
+        "tags": [
+          "Certificate Transparency"
+        ],
+        "summary": "Search certificate transparency data for exact FQDNs.",
+        "description": "Repeat the `fqdn` query parameter to request multiple exact names in one call.\n",
+        "operationId": "ctSearchDomains",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CtFqdnList"
+          },
+          {
+            "$ref": "#/components/parameters/IncludePrecert"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Certificate transparency search results for the requested names.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CTSearchResult"
+                  }
+                },
+                "examples": {
+                  "sampleResults": {
+                    "summary": "Exact-name lookup",
+                    "value": [
+                      {
+                        "name": "www.example.com",
+                        "labels": {
+                          "tld": "com",
+                          "etld1": "example.com",
+                          "domain": "example",
+                          "subdomain": "www"
+                        },
+                        "is_precert": false
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/ct/hydrate": {
+      "get": {
+        "tags": [
+          "Certificate Transparency"
+        ],
+        "summary": "Hydrate certificate transparency occurrences into certificate details.",
+        "operationId": "ctHydrate",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CtOccurrenceList"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hydrated occurrence results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HydrateItem"
+                  }
+                },
+                "examples": {
+                  "sampleResults": {
+                    "summary": "Hydrated certificate material",
+                    "value": [
+                      {
+                        "log_id": 86,
+                        "index": 3800460171,
+                        "cert": {
+                          "fingerprint_sha256": "029c1fe2988ab96ab443daf7faec8a5d2a1781381f965921e5462be42589a3f7",
+                          "serial": "5d1913cd13ae6797948d0241bfefd77a81c",
+                          "subject_dn": "CN=backbonerestored.info",
+                          "issuer_dn": "C=US, O=Let's Encrypt, CN=R13",
+                          "not_before": 1776777317,
+                          "not_after": 1784553316,
+                          "ttl_days": 89,
+                          "key_alg": "1.2.840.113549.1.1.1",
+                          "key_size_bits": 4104,
+                          "sig_alg_oid": "1.2.840.113549.1.1.11",
+                          "san_dns": [
+                            "backbonerestored.info"
+                          ],
+                          "san_dns_count": 1,
+                          "san_ip": [],
+                          "is_ca": false,
+                          "path_len": null,
+                          "policy_oids": [],
+                          "ocsp_uris": [],
+                          "crl_dp": []
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/meta/usage": {
+      "get": {
+        "tags": [
+          "Usage"
+        ],
+        "summary": "Retrieve usage totals and hourly breakdown.",
+        "operationId": "getUsage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UsageWindow"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage information for the requested window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageResponse"
+                },
+                "examples": {
+                  "sampleUsage": {
+                    "summary": "24-hour usage window",
+                    "value": {
+                      "period": {
+                        "start": "2026-04-21T10:00:00Z",
+                        "end": "2026-04-22T10:00:00Z"
+                      },
+                      "totals": {
+                        "lookup_requests": 4,
+                        "ct_requests": 0,
+                        "total_requests": 4
+                      },
+                      "hourly": [
+                        {
+                          "timestamp": "2026-04-22T10:00:00Z",
+                          "lookup_requests": 4,
+                          "ct_requests": 0
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API key",
+        "description": "Bearer API key created in the Have I Been Squatted application. Keys in current documentation begin with `ak_`.\n"
+      }
+    },
+    "parameters": {
+      "DomainPath": {
+        "name": "domain",
+        "in": "path",
+        "required": true,
+        "description": "Domain name to look up or analyze.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "example.com"
+      },
+      "CtPattern": {
+        "name": "pattern",
+        "in": "query",
+        "required": true,
+        "description": "Search pattern used by CT search.",
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "example": "^example"
+      },
+      "CtKind": {
+        "name": "kind",
+        "in": "query",
+        "required": false,
+        "description": "Search strategy kind.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "regex"
+          ],
+          "default": "regex"
+        },
+        "example": "regex"
+      },
+      "CtLimit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Requested maximum number of search results.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 100
+        },
+        "example": 100
+      },
+      "IncludePrecert": {
+        "name": "include_precert",
+        "in": "query",
+        "required": false,
+        "description": "Compatibility parameter accepted by the API. The current service does not apply it as a server-side filter; inspect each result's `is_precert` value.\n",
+        "schema": {
+          "type": "boolean",
+          "default": false
+        },
+        "example": false
+      },
+      "CtField": {
+        "name": "field",
+        "in": "query",
+        "required": false,
+        "description": "Low-level indexed-name selector for CT pattern search. `domain_raw` selects the raw name index, while `domain_ngram`/`ngram` select the n-gram path. This is not a certificate-field selector; omit it to let the service choose automatically.\n",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "domain_raw",
+            "domain_ngram",
+            "ngram"
+          ]
+        }
+      },
+      "CtFqdnList": {
+        "name": "fqdn",
+        "in": "query",
+        "required": true,
+        "description": "One or more fully qualified domain names to search exactly.",
+        "style": "form",
+        "explode": true,
+        "schema": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "example": [
+          "www.example.com",
+          "api.example.com"
+        ]
+      },
+      "CtOccurrenceList": {
+        "name": "occ",
+        "in": "query",
+        "required": true,
+        "description": "One or more occurrence IDs in `{log_id}:{index}` format.",
+        "style": "form",
+        "explode": true,
+        "schema": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9]+:[0-9]+$"
+          }
+        },
+        "example": [
+          "86:3800460171"
+        ]
+      },
+      "UsageWindow": {
+        "name": "t",
+        "in": "query",
+        "required": false,
+        "description": "Usage window length in minutes.",
+        "schema": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 129600,
+          "default": 1440
+        },
+        "example": 1440
+      }
+    },
+    "headers": {
+      "XHasMoreValue": {
+        "description": "Present on `/ct/search` responses. `true` means the search found more matching names than were returned in the body for the effective limit.\n",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "true",
+            "false"
+          ]
+        }
+      },
+      "RetryAfter": {
+        "description": "Seconds until the client should retry after a rate limit response.",
+        "schema": {
+          "type": "number"
+        }
+      },
+      "XRateLimitLimit": {
+        "description": "Maximum allowed request count for the current rate limit window.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request was invalid for the target endpoint."
+      },
+      "Unauthorized": {
+        "description": "Missing, expired, revoked, or otherwise invalid API key."
+      },
+      "Forbidden": {
+        "description": "The API key does not have the required scope for this endpoint."
+      },
+      "TooManyRequests": {
+        "description": "The API key is rate limited.",
+        "headers": {
+          "Retry-After": {
+            "$ref": "#/components/headers/RetryAfter"
+          },
+          "X-RateLimit-Limit": {
+            "$ref": "#/components/headers/XRateLimitLimit"
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Domain": {
+        "type": "object",
+        "required": [
+          "fqdn",
+          "tld",
+          "domain"
+        ],
+        "properties": {
+          "fqdn": {
+            "type": "string"
+          },
+          "tld": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermutationKind": {
+        "type": "string",
+        "enum": [
+          "Addition",
+          "Bitsquatting",
+          "Hyphenation",
+          "Insertion",
+          "Omission",
+          "Repetition",
+          "Replacement",
+          "Subdomain",
+          "Transposition",
+          "VowelSwap",
+          "VowelShuffle",
+          "Keyword",
+          "Tld",
+          "Homoglyph",
+          "Mapped",
+          "DoubleVowelInsertion",
+          "CertificateTransparency",
+          "FauxTld",
+          "UserContext",
+          "Unknown"
+        ]
+      },
+      "Permutation": {
+        "type": "object",
+        "required": [
+          "domain",
+          "kind"
+        ],
+        "properties": {
+          "domain": {
+            "$ref": "#/components/schemas/Domain"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PermutationKind"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MetaKind": {
+        "type": "string",
+        "enum": [
+          "Progress",
+          "Error",
+          "Heartbeat",
+          "Done",
+          "Timeout",
+          "StoredResult"
+        ]
+      },
+      "MetaData": {
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/MetaKind"
+          },
+          "data": {}
+        },
+        "additionalProperties": false
+      },
+      "GeoIpAsn": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "number": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "organization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "GeoIpCountry": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "continent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "iso_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "GeoIpData": {
+        "type": "object",
+        "required": [
+          "ip"
+        ],
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "asn": {
+            "$ref": "#/components/schemas/GeoIpAsn"
+          },
+          "country": {
+            "$ref": "#/components/schemas/GeoIpCountry"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Classification": {
+        "type": "object",
+        "required": [
+          "legitimate",
+          "phishing",
+          "parked"
+        ],
+        "properties": {
+          "legitimate": {
+            "type": "number"
+          },
+          "phishing": {
+            "type": "number"
+          },
+          "parked": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DnsRecords": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aaaa": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mx": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "txt": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cname": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "svcb": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "https": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "caa": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tlsa": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "srv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "naptr": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ptr": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dnskey": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SmtpMetadata": {
+        "type": "object",
+        "required": [
+          "is_positive",
+          "response"
+        ],
+        "properties": {
+          "is_positive": {
+            "type": "boolean"
+          },
+          "response": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NxdomainMetadata": {
+        "type": "object",
+        "required": [
+          "query",
+          "trusted"
+        ],
+        "properties": {
+          "query": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "trusted": {
+            "type": "boolean"
+          },
+          "soa": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "RedirectKind": {
+        "type": "string",
+        "enum": [
+          "InitialRequest",
+          "Http",
+          "Javascript",
+          "Client"
+        ]
+      },
+      "CertificateDetails": {
+        "type": "object",
+        "required": [
+          "subject_name",
+          "san_list",
+          "issuer",
+          "valid_from",
+          "valid_to",
+          "certificate_transparency_compliance",
+          "certificate_id"
+        ],
+        "properties": {
+          "subject_name": {
+            "type": "string"
+          },
+          "san_list": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "valid_from": {
+            "type": "number"
+          },
+          "valid_to": {
+            "type": "number"
+          },
+          "certificate_transparency_compliance": {
+            "type": "string"
+          },
+          "certificate_id": {
+            "type": "integer"
+          },
+          "signed_certificate_timestamp_list": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "key_exchange_group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mac": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "key_exchange": {
+            "type": "string"
+          },
+          "cipher": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Redirect": {
+        "type": "object",
+        "required": [
+          "url",
+          "kind"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RedirectKind"
+          },
+          "status": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "certificate": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CertificateDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "RedirectChain": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Redirect"
+        }
+      },
+      "ParsedX509Certificate": {
+        "type": "object",
+        "required": [
+          "fingerprint_sha256",
+          "serial",
+          "subject_dn",
+          "issuer_dn",
+          "not_before",
+          "not_after",
+          "ttl_days",
+          "key_alg",
+          "key_size_bits",
+          "sig_alg_oid",
+          "san_dns",
+          "san_dns_count",
+          "san_ip",
+          "is_ca",
+          "path_len",
+          "policy_oids",
+          "ocsp_uris",
+          "crl_dp"
+        ],
+        "properties": {
+          "fingerprint_sha256": {
+            "type": "string"
+          },
+          "serial": {
+            "type": "string"
+          },
+          "subject_dn": {
+            "type": "string"
+          },
+          "issuer_dn": {
+            "type": "string"
+          },
+          "not_before": {
+            "type": "integer"
+          },
+          "not_after": {
+            "type": "integer"
+          },
+          "ttl_days": {
+            "type": "integer"
+          },
+          "key_alg": {
+            "type": "string"
+          },
+          "key_size_bits": {
+            "type": "integer"
+          },
+          "sig_alg_oid": {
+            "type": "string"
+          },
+          "san_dns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "san_dns_count": {
+            "type": "integer"
+          },
+          "san_ip": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "is_ca": {
+            "type": "boolean"
+          },
+          "path_len": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "policy_oids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ocsp_uris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "crl_dp": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PassiveDNSRecord": {
+        "type": "object",
+        "required": [
+          "rrtype",
+          "rrname",
+          "rdata",
+          "time_first",
+          "time_last",
+          "count"
+        ],
+        "properties": {
+          "rrtype": {
+            "type": "string"
+          },
+          "rrname": {
+            "type": "string"
+          },
+          "rdata": {
+            "type": "string"
+          },
+          "time_first": {
+            "type": "integer"
+          },
+          "time_last": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PassiveTLSRecord": {
+        "type": "object",
+        "required": [
+          "certificates",
+          "subjects"
+        ],
+        "properties": {
+          "certificates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PassiveTLSMap": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/PassiveTLSRecord"
+        }
+      },
+      "SearchResultLabels": {
+        "type": "object",
+        "required": [
+          "tld",
+          "etld1",
+          "domain"
+        ],
+        "properties": {
+          "tld": {
+            "type": "string"
+          },
+          "etld1": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "registrable_domain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subdomain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "OccurrenceRec": {
+        "type": "object",
+        "required": [
+          "log_id",
+          "kind",
+          "ts_sec",
+          "index"
+        ],
+        "properties": {
+          "log_id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "integer"
+          },
+          "ts_sec": {
+            "type": "integer"
+          },
+          "index": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HydratedOccurrence": {
+        "type": "object",
+        "required": [
+          "log_id",
+          "kind",
+          "ts_sec",
+          "index",
+          "cert"
+        ],
+        "properties": {
+          "log_id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "integer"
+          },
+          "ts_sec": {
+            "type": "integer"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "cert": {
+            "$ref": "#/components/schemas/ParsedX509Certificate"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CTSearchResult": {
+        "type": "object",
+        "required": [
+          "name",
+          "labels",
+          "is_precert"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/SearchResultLabels"
+          },
+          "is_precert": {
+            "type": "boolean"
+          },
+          "log_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "index": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "occurrences_count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "last_seen_ts": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "occurrences": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OccurrenceRec"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HydratedOccurrence"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "cert": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ParsedX509Certificate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "HydrateItem": {
+        "type": "object",
+        "required": [
+          "log_id",
+          "index"
+        ],
+        "properties": {
+          "log_id": {
+            "type": "integer"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "cert": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ParsedX509Certificate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsagePeriod": {
+        "type": "object",
+        "required": [
+          "start",
+          "end"
+        ],
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsageTotals": {
+        "type": "object",
+        "required": [
+          "lookup_requests",
+          "ct_requests",
+          "total_requests"
+        ],
+        "properties": {
+          "lookup_requests": {
+            "type": "integer"
+          },
+          "ct_requests": {
+            "type": "integer"
+          },
+          "total_requests": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HourlyUsage": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "lookup_requests",
+          "ct_requests"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lookup_requests": {
+            "type": "integer"
+          },
+          "ct_requests": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsageResponse": {
+        "type": "object",
+        "required": [
+          "period",
+          "totals",
+          "hourly"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/UsagePeriod"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/UsageTotals"
+          },
+          "hourly": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HourlyUsage"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "Operation": {
+        "type": "string",
+        "enum": [
+          "Levenshtein",
+          "GeoIp",
+          "IpEnumeration",
+          "HttpBanner",
+          "Rdap",
+          "WhoIs",
+          "Classification",
+          "Meta",
+          "Screenshot",
+          "DomainStatus",
+          "PageRank",
+          "Dns",
+          "Technologies",
+          "Identifiers",
+          "RedirectChain",
+          "RegistrationMetadata",
+          "Nxdomain",
+          "MxCheck",
+          "OriginX509",
+          "PassiveDns",
+          "PassiveTls",
+          "CertificateTransparency",
+          "Subdomains",
+          "TlsChain",
+          "Sitemap",
+          "CrawlMeta",
+          "BusinessIntel",
+          "Ports",
+          "Security",
+          "DomainMetadata"
+        ]
+      },
+      "StreamMessageBase": {
+        "type": "object",
+        "required": [
+          "op"
+        ],
+        "properties": {
+          "op": {
+            "$ref": "#/components/schemas/Operation"
+          },
+          "permutation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Permutation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MetaStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "Meta"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/MetaData"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "GeoIpStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "GeoIp"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/GeoIpData"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ClassificationStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "Classification"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Classification"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "DnsStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "Dns"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DnsRecords"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "RedirectChainStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "RedirectChain"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RedirectChain"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "MxCheckStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "MxCheck"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SmtpMetadata"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "NxdomainStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "Nxdomain"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/NxdomainMetadata"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "OriginX509StreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "OriginX509"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ParsedX509Certificate"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "PassiveDnsStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "PassiveDns"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PassiveDNSRecord"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "PassiveTlsStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "PassiveTls"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PassiveTLSMap"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "CertificateTransparencyStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "const": "CertificateTransparency"
+              },
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CTSearchResult"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "GenericStreamMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StreamMessageBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "enum": [
+                  "Levenshtein",
+                  "IpEnumeration",
+                  "HttpBanner",
+                  "Rdap",
+                  "WhoIs",
+                  "Screenshot",
+                  "Technologies",
+                  "DomainStatus",
+                  "PageRank",
+                  "Identifiers",
+                  "RegistrationMetadata",
+                  "Subdomains",
+                  "TlsChain",
+                  "Sitemap",
+                  "CrawlMeta",
+                  "BusinessIntel",
+                  "Ports",
+                  "Security",
+                  "DomainMetadata"
+                ]
+              },
+              "data": {}
+            }
+          }
+        ]
+      },
+      "StreamMessage": {
+        "description": "One line from a streaming lookup response. The exact shape of `data` depends on `op`.\n",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MetaStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/GeoIpStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ClassificationStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/DnsStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/RedirectChainStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/MxCheckStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/NxdomainStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/OriginX509StreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/PassiveDnsStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/PassiveTlsStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/CertificateTransparencyStreamMessage"
+          },
+          {
+            "$ref": "#/components/schemas/GenericStreamMessage"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "op",
+          "mapping": {
+            "Meta": "#/components/schemas/MetaStreamMessage",
+            "GeoIp": "#/components/schemas/GeoIpStreamMessage",
+            "Classification": "#/components/schemas/ClassificationStreamMessage",
+            "Dns": "#/components/schemas/DnsStreamMessage",
+            "RedirectChain": "#/components/schemas/RedirectChainStreamMessage",
+            "MxCheck": "#/components/schemas/MxCheckStreamMessage",
+            "Nxdomain": "#/components/schemas/NxdomainStreamMessage",
+            "OriginX509": "#/components/schemas/OriginX509StreamMessage",
+            "PassiveDns": "#/components/schemas/PassiveDnsStreamMessage",
+            "PassiveTls": "#/components/schemas/PassiveTlsStreamMessage",
+            "CertificateTransparency": "#/components/schemas/CertificateTransparencyStreamMessage",
+            "Levenshtein": "#/components/schemas/GenericStreamMessage",
+            "IpEnumeration": "#/components/schemas/GenericStreamMessage",
+            "HttpBanner": "#/components/schemas/GenericStreamMessage",
+            "Rdap": "#/components/schemas/GenericStreamMessage",
+            "WhoIs": "#/components/schemas/GenericStreamMessage",
+            "Screenshot": "#/components/schemas/GenericStreamMessage",
+            "Technologies": "#/components/schemas/GenericStreamMessage",
+            "DomainStatus": "#/components/schemas/GenericStreamMessage",
+            "PageRank": "#/components/schemas/GenericStreamMessage",
+            "Identifiers": "#/components/schemas/GenericStreamMessage",
+            "RegistrationMetadata": "#/components/schemas/GenericStreamMessage",
+            "Subdomains": "#/components/schemas/GenericStreamMessage",
+            "TlsChain": "#/components/schemas/GenericStreamMessage",
+            "Sitemap": "#/components/schemas/GenericStreamMessage",
+            "CrawlMeta": "#/components/schemas/GenericStreamMessage",
+            "BusinessIntel": "#/components/schemas/GenericStreamMessage",
+            "Ports": "#/components/schemas/GenericStreamMessage",
+            "Security": "#/components/schemas/GenericStreamMessage",
+            "DomainMetadata": "#/components/schemas/GenericStreamMessage"
+          }
+        }
+      }
+    }
+  }
+}

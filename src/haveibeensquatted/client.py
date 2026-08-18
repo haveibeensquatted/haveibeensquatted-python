@@ -17,6 +17,8 @@ API_HOST = "https://api.haveibeensquatted.com"
 API_VERSION = "v1"
 CT_SEARCH_DOMAINS_MAX_FQDNS_PER_REQUEST = 100
 CT_SEARCH_DOMAINS_MAX_URL_LENGTH = 7000
+USAGE_MIN_MINUTES = 60
+USAGE_MAX_MINUTES = 129_600
 
 
 class HaveIBeenSquatted:
@@ -300,10 +302,14 @@ class HaveIBeenSquatted:
             Parsed usage response containing period, totals, and hourly data.
 
         Raises:
-            ValueError: If ``minutes`` is not greater than 0.
+            TypeError: If ``minutes`` is not an integer.
+            ValueError: If ``minutes`` is outside the supported 60-minute to
+                129,600-minute range.
         """
-        if minutes <= 0:
-            raise ValueError("minutes must be greater than 0")
+        if isinstance(minutes, bool) or not isinstance(minutes, int):
+            raise TypeError("minutes must be an integer")
+        if not USAGE_MIN_MINUTES <= minutes <= USAGE_MAX_MINUTES:
+            raise ValueError(f"minutes must be between {USAGE_MIN_MINUTES} and {USAGE_MAX_MINUTES}")
         url = urllib.parse.urljoin(self.base_url + "/", "meta/usage")
         url = f"{url}?{urllib.parse.urlencode({'t': str(minutes)})}"
         data, _headers = await self._get_json(url)

@@ -54,3 +54,27 @@ async def test_usage_custom_minutes():
     response = await client.usage(minutes=60)
 
     assert response.period.end == "2024-01-01T01:00:00Z"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("minutes", [0, 1, 59, 129_601])
+async def test_usage_rejects_unsupported_minutes(minutes: int):
+    mock_client = MockHttpClient([])
+    client = HaveIBeenSquatted("ak_test_token", http_client=mock_client)
+
+    with pytest.raises(ValueError, match="between 60 and 129600"):
+        await client.usage(minutes=minutes)
+
+    assert mock_client.calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("minutes", [60.5, "60", True, None])
+async def test_usage_rejects_non_integer_minutes(minutes: object):
+    mock_client = MockHttpClient([])
+    client = HaveIBeenSquatted("ak_test_token", http_client=mock_client)
+
+    with pytest.raises(TypeError, match="minutes must be an integer"):
+        await client.usage(minutes=minutes)
+
+    assert mock_client.calls == []

@@ -7,6 +7,7 @@ Squatted API. It handles authentication, HTTP requests, and streaming responses.
 import json
 import urllib.parse
 from collections.abc import AsyncIterator
+from importlib.metadata import version as get_version
 
 from .http import DefaultHttpClient, HttpClient, HTTPError, RateLimitError, URLError
 from .models import CTSearchResponse, CTSearchResult, HydrateItem, Message, UsageResponse
@@ -15,6 +16,7 @@ from .parser import StreamParser
 # API constants
 API_HOST = "https://api.haveibeensquatted.com"
 API_VERSION = "v1"
+USER_AGENT = f"haveibeensquatted-python/{get_version('haveibeensquatted')}"
 CT_SEARCH_DOMAINS_MAX_FQDNS_PER_REQUEST = 100
 CT_SEARCH_DOMAINS_MAX_URL_LENGTH = 7000
 USAGE_MIN_MINUTES = 60
@@ -88,8 +90,11 @@ class HaveIBeenSquatted:
             api_version = version or API_VERSION
             self.base_url = urllib.parse.urljoin(api_host + "/", api_version)
 
-        # Set up default headers with API key
-        self.headers = {"Authorization": f"Bearer {self.api_key}"}
+        # Set up default headers with API key and an explicit SDK identity.
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "User-Agent": USER_AGENT,
+        }
 
         self.http_client = http_client or DefaultHttpClient()
         self.parser = StreamParser()

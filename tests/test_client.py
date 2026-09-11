@@ -11,6 +11,7 @@ from haveibeensquatted import (
     HTTPError,
     Operation,
     URLError,
+    __version__,
 )
 
 
@@ -55,6 +56,10 @@ async def test_client_initialization():
 
     assert client.api_key == "ak_test_token"
     assert client.base_url == "https://api.haveibeensquatted.com/v1"
+    assert client.headers == {
+        "Authorization": "Bearer ak_test_token",
+        "User-Agent": f"haveibeensquatted-python/{__version__}",
+    }
     assert isinstance(client.http_client, type(client.http_client))  # DefaultHttpClient
 
 
@@ -142,6 +147,7 @@ async def test_squat_success():
     url, headers = mock_client.calls[0]
     assert url == "https://api.haveibeensquatted.com/v1/lookup/squat/example.com"
     assert headers["Authorization"] == "Bearer ak_test_token"
+    assert headers["User-Agent"] == f"haveibeensquatted-python/{__version__}"
 
 
 @pytest.mark.asyncio

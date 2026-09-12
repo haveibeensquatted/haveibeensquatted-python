@@ -27,8 +27,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pattern", help="search pattern (regex)")
     parser.add_argument("--kind", default="regex", help="search kind (default: regex)")
     parser.add_argument("--limit", type=int, default=10, help="max results (default: 10)")
-    parser.add_argument("--field", default=None, help="field to search (optional)")
-    parser.add_argument("--include-precert", action="store_true", help="include precerts")
+    parser.add_argument(
+        "--field",
+        default=None,
+        help="internal CT name-index selector (not a certificate field; omit normally)",
+    )
+    parser.add_argument(
+        "--include-precert",
+        action="store_true",
+        help="forward the compatibility parameter (currently does not filter results)",
+    )
     parser.add_argument(
         "--fqdn",
         action="append",

@@ -6,7 +6,7 @@ API responses and streaming data from the Have I Been Squatted service.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -26,8 +26,11 @@ class Operation(Enum):
     CLASSIFICATION = "Classification"
     META = "Meta"
     SCREENSHOT = "Screenshot"
+    DOMAIN_STATUS = "DomainStatus"
+    PAGE_RANK = "PageRank"
     DNS = "Dns"
     TECHNOLOGIES = "Technologies"
+    IDENTIFIERS = "Identifiers"
     REDIRECT_CHAIN = "RedirectChain"
     REGISTRATION_METADATA = "RegistrationMetadata"
     NXDOMAIN = "Nxdomain"
@@ -36,6 +39,14 @@ class Operation(Enum):
     PASSIVE_DNS = "PassiveDns"
     PASSIVE_TLS = "PassiveTls"
     CERTIFICATE_TRANSPARENCY = "CertificateTransparency"
+    SUBDOMAINS = "Subdomains"
+    TLS_CHAIN = "TlsChain"
+    SITEMAP = "Sitemap"
+    CRAWL_META = "CrawlMeta"
+    BUSINESS_INTEL = "BusinessIntel"
+    PORTS = "Ports"
+    SECURITY = "Security"
+    DOMAIN_METADATA = "DomainMetadata"
 
 
 class MetaKind(Enum):
@@ -260,6 +271,17 @@ class PermutationResult:
     passive_dns: list[PassiveDNSRecord] | None = None
     passive_tls: dict[str, PassiveTLSRecord] | None = None
     certificate_transparency: CTSearchResult | None = None
+    # Keep new fields after the original field set to preserve positional compatibility.
+    dns_svcb: list[str] | None = None
+    dns_https: list[str] | None = None
+    dns_caa: list[str] | None = None
+    dns_tlsa: list[str] | None = None
+    dns_srv: list[str] | None = None
+    dns_naptr: list[str] | None = None
+    dns_ptr: list[str] | None = None
+    dns_dnskey: list[str] | None = None
+    dns_ds: list[str] | None = None
+    unmodeled_operations: dict[str, list[object]] = field(default_factory=dict)
 
 
 @dataclass
@@ -297,6 +319,15 @@ class DnsRecords:
     txt: list[str]
     cname: list[str]
     ns: list[str]
+    svcb: list[str] = field(default_factory=list)
+    https: list[str] = field(default_factory=list)
+    caa: list[str] = field(default_factory=list)
+    tlsa: list[str] = field(default_factory=list)
+    srv: list[str] = field(default_factory=list)
+    naptr: list[str] = field(default_factory=list)
+    ptr: list[str] = field(default_factory=list)
+    dnskey: list[str] = field(default_factory=list)
+    ds: list[str] = field(default_factory=list)
 
 
 @dataclass

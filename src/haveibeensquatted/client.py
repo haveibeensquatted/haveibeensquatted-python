@@ -7,6 +7,7 @@ Squatted API. It handles authentication, HTTP requests, and streaming responses.
 import json
 import urllib.parse
 from collections.abc import AsyncIterator
+from importlib.metadata import version as get_version
 
 from .http import DefaultHttpClient, HttpClient, HTTPError, RateLimitError, URLError
 from .models import CTSearchResponse, CTSearchResult, HydrateItem, Message, UsageResponse
@@ -15,8 +16,11 @@ from .parser import StreamParser
 # API constants
 API_HOST = "https://api.haveibeensquatted.com"
 API_VERSION = "v1"
+USER_AGENT = f"haveibeensquatted-python/{get_version('haveibeensquatted')}"
 CT_SEARCH_DOMAINS_MAX_FQDNS_PER_REQUEST = 100
 CT_SEARCH_DOMAINS_MAX_URL_LENGTH = 7000
+USAGE_MIN_MINUTES = 60
+USAGE_MAX_MINUTES = 129_600
 
 
 class HaveIBeenSquatted:
@@ -86,8 +90,11 @@ class HaveIBeenSquatted:
             api_version = version or API_VERSION
             self.base_url = urllib.parse.urljoin(api_host + "/", api_version)
 
-        # Set up default headers with API key
-        self.headers = {"Authorization": f"Bearer {self.api_key}"}
+        # Set up default headers with API key and an explicit SDK identity.
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "User-Agent": USER_AGENT,
+        }
 
         self.http_client = http_client or DefaultHttpClient()
         self.parser = StreamParser()
@@ -233,7 +240,22 @@ class HaveIBeenSquatted:
         field: str | None = None,
         include_precert: bool = False,
     ) -> CTSearchResponse:
-        """Search certificate transparency logs."""
+        """Search certificate transparency logs.
+
+        Args:
+            pattern: Regular expression matched against indexed CT names.
+            kind: Search strategy. The current service supports ``regex``.
+            limit: Requested maximum number of results.
+            field: Optional low-level CT name-index selector. This is not a
+                certificate field such as issuer or Common Name; omit it to let
+                the service select the index automatically.
+            include_precert: Compatibility parameter forwarded to the service.
+                The current service does not use it to filter precertificate-only
+                results.
+
+        Returns:
+            Parsed CT search results and the response truncation indicator.
+        """
         if not pattern or not pattern.strip():
             raise ValueError("Pattern cannot be empty")
         params: dict[str, str] = {
@@ -300,10 +322,14 @@ class HaveIBeenSquatted:
             Parsed usage response containing period, totals, and hourly data.
 
         Raises:
-            ValueError: If ``minutes`` is not greater than 0.
+            TypeError: If ``minutes`` is not an integer.
+            ValueError: If ``minutes`` is outside the supported 60-minute to
+                129,600-minute range.
         """
-        if minutes <= 0:
-            raise ValueError("minutes must be greater than 0")
+        if isinstance(minutes, bool) or not isinstance(minutes, int):
+            raise TypeError("minutes must be an integer")
+        if not USAGE_MIN_MINUTES <= minutes <= USAGE_MAX_MINUTES:
+            raise ValueError(f"minutes must be between {USAGE_MIN_MINUTES} and {USAGE_MAX_MINUTES}")
         url = urllib.parse.urljoin(self.base_url + "/", "meta/usage")
         url = f"{url}?{urllib.parse.urlencode({'t': str(minutes)})}"
         data, _headers = await self._get_json(url)

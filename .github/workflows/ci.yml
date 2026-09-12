@@ -6,11 +6,17 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   conventional-commit-check:
     name: Conventional commit check
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,6 +29,8 @@ jobs:
   lint-and-test:
     name: Lint and test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]

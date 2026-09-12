@@ -148,9 +148,9 @@ async for message in client.analyze("example.com"):
 
 Search and query Certificate Transparency (CT) logs to discover SSL/TLS certificates issued for domains. CT logs provide a public record of all certificates issued by Certificate Authorities, making it possible to discover subdomains, detect unauthorized certificate issuance, and track certificate history.
 
-**`ct_search`** - Search CT logs using regex patterns or other search types. Returns matching certificates with occurrence counts, timestamps, and basic metadata. Supports filtering by field, including/excluding precertificates, and pagination.
+**`ct_search`** - Search CT logs with regex patterns (`kind` defaults to `regex`). Returns matching names with occurrence counts, timestamps, and basic metadata. Set `limit` to bound the response; `has_more` indicates truncation, but there is no cursor or page token. The low-level `field` option selects an internal name index and is not a certificate-field selector; omit it for automatic selection. `include_precert` is forwarded for compatibility, but the current service does not filter precertificate-only results with it.
 
-**`ct_search_domains`** - Look up exact FQDNs in CT logs. Useful for quickly checking if certificates exist for specific domains without regex matching.
+**`ct_search_domains`** - Look up exact FQDNs in CT logs. Useful for quickly checking whether specific hostnames appear in CT without regex matching.
 
 **`ct_hydrate`** - Retrieve full certificate details for specific CT log occurrences. Takes log ID and index pairs and returns complete X.509 certificate information including subject, issuer, validity period, and extensions.
 

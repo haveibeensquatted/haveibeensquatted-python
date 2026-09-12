@@ -395,6 +395,15 @@ class StreamParser:
             txt=list_of_str(data.get("txt"), "txt"),
             cname=list_of_str(data.get("cname"), "cname"),
             ns=list_of_str(data.get("ns"), "ns"),
+            svcb=list_of_str(data.get("svcb"), "svcb"),
+            https=list_of_str(data.get("https"), "https"),
+            caa=list_of_str(data.get("caa"), "caa"),
+            tlsa=list_of_str(data.get("tlsa"), "tlsa"),
+            srv=list_of_str(data.get("srv"), "srv"),
+            naptr=list_of_str(data.get("naptr"), "naptr"),
+            ptr=list_of_str(data.get("ptr"), "ptr"),
+            dnskey=list_of_str(data.get("dnskey"), "dnskey"),
+            ds=list_of_str(data.get("ds"), "ds"),
         )
 
     def _parse_smtp_metadata(self, data: Mapping[str, object]) -> SmtpMetadata:
@@ -658,6 +667,15 @@ class StreamParser:
                 result.dns_txt = dns.txt
                 result.dns_cname = dns.cname
                 result.dns_ns = dns.ns
+                result.dns_svcb = dns.svcb
+                result.dns_https = dns.https
+                result.dns_caa = dns.caa
+                result.dns_tlsa = dns.tlsa
+                result.dns_srv = dns.srv
+                result.dns_naptr = dns.naptr
+                result.dns_ptr = dns.ptr
+                result.dns_dnskey = dns.dnskey
+                result.dns_ds = dns.ds
             elif msg.op == Operation.REGISTRATION_METADATA:
                 result.registration_metadata = msg.data  # type: ignore[assignment]
             elif msg.op == Operation.MX_CHECK:
@@ -672,6 +690,8 @@ class StreamParser:
                 result.passive_tls = msg.data  # type: ignore[assignment]
             elif msg.op == Operation.CERTIFICATE_TRANSPARENCY:
                 result.certificate_transparency = msg.data  # type: ignore[assignment]
+            else:
+                result.unmodeled_operations.setdefault(msg.op.value, []).append(msg.data)
 
         if ips_dict:
             # Normalize: no null map values; for missing GeoIP emit minimal struct with only ip

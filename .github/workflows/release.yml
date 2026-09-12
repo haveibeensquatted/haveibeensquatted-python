@@ -6,26 +6,35 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Release
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     outputs:
       released: ${{ steps.semantic-release.outputs.released }}
       tag: ${{ steps.semantic-release.outputs.tag }}
+      version: ${{ steps.semantic-release.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.ref_name }}
+          fetch-depth: 0
 
       - name: Semantic release
         id: semantic-release
         uses: python-semantic-release/python-semantic-release@754a065a2ea187da71977ada6630a8ec0f98e380 # v10.5.3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Tag the reviewed commit without pushing a release commit to protected main.
+          commit: "false"
           git_committer_name: "github-actions"
           git_committer_email: "actions@users.noreply.github.com"
 
@@ -54,6 +63,12 @@ jobs:
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
+
+      - name: Set package version from release
+        env:
+          RELEASE_VERSION: ${{ needs.release.outputs.version }}
+        # Tag-only releases leave the source version unchanged. Stamp the build checkout.
+        run: uv version "$RELEASE_VERSION" --frozen
 
       - name: Build package
         run: uv build --no-sources

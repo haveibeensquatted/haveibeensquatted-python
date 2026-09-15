@@ -68,17 +68,24 @@ def test_openapi_version_and_expected_paths() -> None:
     spec = _load_spec()
 
     assert spec["openapi"] == "3.1.1"
+    assert spec["info"]["version"] == "v2"
+    assert spec["servers"] == [
+        {
+            "url": "https://api.haveibeensquatted.com",
+            "description": "Have I Been Squatted API",
+        }
+    ]
 
     paths = spec["paths"]
     assert isinstance(paths, dict)
     assert set(paths) == {
-        "/lookup/squat/{domain}",
-        "/lookup/nxdomain/{domain}",
-        "/analyze/{domain}",
-        "/ct/search",
-        "/ct/search/domains",
-        "/ct/hydrate",
-        "/meta/usage",
+        "/v2/squat/{domain}",
+        "/v2/nxdomain/{domain}",
+        "/v2/analyze/{domain}",
+        "/v1/ct/search",
+        "/v1/ct/search/domains",
+        "/v1/ct/hydrate",
+        "/v1/meta/usage",
     }
 
 
@@ -110,7 +117,7 @@ def test_bearer_auth_is_defined() -> None:
 def test_ct_search_is_array_plus_has_more_header() -> None:
     spec = _load_spec()
 
-    get_op = spec["paths"]["/ct/search"]["get"]
+    get_op = spec["paths"]["/v1/ct/search"]["get"]
     assert isinstance(get_op, dict)
     response = get_op["responses"]["200"]
     assert isinstance(response, dict)
@@ -140,7 +147,7 @@ def test_ct_search_domains_and_hydrate_do_not_advertise_pagination() -> None:
     spec = _load_spec()
     forbidden_params = {"page", "cursor", "offset"}
 
-    for path in ("/ct/search/domains", "/ct/hydrate"):
+    for path in ("/v1/ct/search/domains", "/v1/ct/hydrate"):
         get_op = spec["paths"][path]["get"]
         assert isinstance(get_op, dict)
         params = get_op["parameters"]
@@ -242,9 +249,9 @@ def test_streaming_lookup_endpoints_are_ndjson_and_use_discriminator() -> None:
     assert "Security" in generic_ops
 
     for path in (
-        "/lookup/squat/{domain}",
-        "/lookup/nxdomain/{domain}",
-        "/analyze/{domain}",
+        "/v2/squat/{domain}",
+        "/v2/nxdomain/{domain}",
+        "/v2/analyze/{domain}",
     ):
         get_op = spec["paths"][path]["get"]
         assert isinstance(get_op, dict)
@@ -316,18 +323,18 @@ def test_examples_validate_against_selected_schemas() -> None:
     paths = spec["paths"]
     assert isinstance(paths, dict)
 
-    ct_search_schema = paths["/ct/search"]["get"]["responses"]["200"]["content"][
+    ct_search_schema = paths["/v1/ct/search"]["get"]["responses"]["200"]["content"][
         "application/json"
     ]["schema"]
-    ct_search_example = paths["/ct/search"]["get"]["responses"]["200"]["content"][
+    ct_search_example = paths["/v1/ct/search"]["get"]["responses"]["200"]["content"][
         "application/json"
     ]["examples"]["sampleResults"]["value"]
     _validate_example(ct_search_schema, ct_search_example, spec)
 
-    usage_schema = paths["/meta/usage"]["get"]["responses"]["200"]["content"]["application/json"][
-        "schema"
-    ]
-    usage_example = paths["/meta/usage"]["get"]["responses"]["200"]["content"]["application/json"][
-        "examples"
-    ]["sampleUsage"]["value"]
+    usage_schema = paths["/v1/meta/usage"]["get"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"]
+    usage_example = paths["/v1/meta/usage"]["get"]["responses"]["200"]["content"][
+        "application/json"
+    ]["examples"]["sampleUsage"]["value"]
     _validate_example(usage_schema, usage_example, spec)

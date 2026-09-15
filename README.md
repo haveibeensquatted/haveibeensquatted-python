@@ -213,7 +213,7 @@ except RateLimitError as exc:
 from haveibeensquatted import API_HOST, API_VERSION
 
 print(API_HOST)    # https://api.haveibeensquatted.com
-print(API_VERSION) # v1
+print(API_VERSION) # v2 (streaming lookup routes)
 ```
 
 ## Custom HTTP client

@@ -15,7 +15,8 @@ from .parser import StreamParser
 
 # API constants
 API_HOST = "https://api.haveibeensquatted.com"
-API_VERSION = "v1"
+API_VERSION = "v2"
+_RETAINED_API_VERSION = "v1"
 USER_AGENT = f"haveibeensquatted-python/{get_version('haveibeensquatted')}"
 CT_SEARCH_DOMAINS_MAX_FQDNS_PER_REQUEST = 100
 CT_SEARCH_DOMAINS_MAX_URL_LENGTH = 7000
@@ -65,8 +66,9 @@ class HaveIBeenSquatted:
             http_client: Optional custom HTTP client implementation.
                         If None, uses DefaultHttpClient with urllib
             host: Optional API host (defaults to production)
-            version: Optional API version (defaults to v1)
-            base_url: Optional complete base URL (overrides host/version)
+            version: Optional streaming lookup API version (defaults to v2).
+            base_url: Optional complete base URL that overrides host/version and
+                is used for all endpoints.
 
         Raises:
             ValueError: If api_key is empty or doesn't start with 'ak_'
@@ -85,10 +87,11 @@ class HaveIBeenSquatted:
 
         if base_url:
             self.base_url = base_url.rstrip("/")
+            self._retained_base_url = self.base_url
         else:
             api_host = host or API_HOST
-            api_version = version or API_VERSION
-            self.base_url = urllib.parse.urljoin(api_host + "/", api_version)
+            self.base_url = urllib.parse.urljoin(api_host + "/", version or API_VERSION)
+            self._retained_base_url = urllib.parse.urljoin(api_host + "/", _RETAINED_API_VERSION)
 
         # Set up default headers with API key and an explicit SDK identity.
         self.headers = {
@@ -131,7 +134,7 @@ class HaveIBeenSquatted:
         if not domain or not domain.strip():
             raise ValueError("Domain cannot be empty")
 
-        url = urllib.parse.urljoin(self.base_url + "/", f"lookup/squat/{domain.strip()}")
+        url = urllib.parse.urljoin(self.base_url + "/", f"squat/{domain.strip()}")
 
         try:
             async for message in self._stream_messages(url, self.headers):
@@ -171,7 +174,7 @@ class HaveIBeenSquatted:
         if not domain or not domain.strip():
             raise ValueError("Domain cannot be empty")
 
-        url = urllib.parse.urljoin(self.base_url + "/", f"lookup/nxdomain/{domain.strip()}")
+        url = urllib.parse.urljoin(self.base_url + "/", f"nxdomain/{domain.strip()}")
 
         try:
             async for message in self._stream_messages(url, self.headers):
@@ -266,7 +269,7 @@ class HaveIBeenSquatted:
         }
         if field:
             params["field"] = field
-        url = urllib.parse.urljoin(self.base_url + "/", "ct/search")
+        url = urllib.parse.urljoin(self._retained_base_url + "/", "ct/search")
         url = f"{url}?{urllib.parse.urlencode(params)}"
         data, headers = await self._get_json(url)
         if not isinstance(data, list):
@@ -284,7 +287,7 @@ class HaveIBeenSquatted:
         """Look up exact FQDNs in certificate transparency logs."""
         if not fqdns:
             raise ValueError("fqdns cannot be empty")
-        url = urllib.parse.urljoin(self.base_url + "/", "ct/search/domains")
+        url = urllib.parse.urljoin(self._retained_base_url + "/", "ct/search/domains")
         normalized_fqdns = self._normalize_fqdns(fqdns)
         chunks = self._chunk_ct_search_fqdns(url, normalized_fqdns, include_precert)
 
@@ -305,7 +308,7 @@ class HaveIBeenSquatted:
         if not occurrences:
             raise ValueError("occurrences cannot be empty")
         query_params = [("occ", f"{log_id}:{index}") for log_id, index in occurrences]
-        url = urllib.parse.urljoin(self.base_url + "/", "ct/hydrate")
+        url = urllib.parse.urljoin(self._retained_base_url + "/", "ct/hydrate")
         url = f"{url}?{urllib.parse.urlencode(query_params)}"
         data, _headers = await self._get_json(url)
         if not isinstance(data, list):
@@ -330,7 +333,7 @@ class HaveIBeenSquatted:
             raise TypeError("minutes must be an integer")
         if not USAGE_MIN_MINUTES <= minutes <= USAGE_MAX_MINUTES:
             raise ValueError(f"minutes must be between {USAGE_MIN_MINUTES} and {USAGE_MAX_MINUTES}")
-        url = urllib.parse.urljoin(self.base_url + "/", "meta/usage")
+        url = urllib.parse.urljoin(self._retained_base_url + "/", "meta/usage")
         url = f"{url}?{urllib.parse.urlencode({'t': str(minutes)})}"
         data, _headers = await self._get_json(url)
         return self.parser._parse_usage_response(data)

@@ -50,6 +50,8 @@ dev = [
 ]
 
 [tool.uv]
+# 14d dependency cooldown
+exclude-newer = "P14D"
 # OpenAPI validators transitive dependency (GHSA-4xgf-cpjx-pc3j)
 constraint-dependencies = ["pydantic-settings>=2.14.2"]
 

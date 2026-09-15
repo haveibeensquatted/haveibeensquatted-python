@@ -49,6 +49,10 @@ dev = [
     "openapi-spec-validator>=0.8.4",
 ]
 
+[tool.uv]
+# OpenAPI validators transitive dependency (GHSA-4xgf-cpjx-pc3j)
+constraint-dependencies = ["pydantic-settings>=2.14.2"]
+
 [tool.semantic_release]
 commit_parser = "conventional"
 tag_format = "v{version}"

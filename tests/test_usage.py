@@ -37,6 +37,7 @@ async def test_usage_default_minutes():
     response = await client.usage()
 
     assert response.totals.total_requests == 3
+    assert mock_client.calls[0][0] == "https://api.haveibeensquatted.com/v1/meta/usage?t=1440"
 
 
 @pytest.mark.asyncio
@@ -54,6 +55,7 @@ async def test_usage_custom_minutes():
     response = await client.usage(minutes=60)
 
     assert response.period.end == "2024-01-01T01:00:00Z"
+    assert mock_client.calls[0][0] == "https://api.haveibeensquatted.com/v1/meta/usage?t=60"
 
 
 @pytest.mark.asyncio

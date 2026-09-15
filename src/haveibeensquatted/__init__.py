@@ -63,7 +63,7 @@ from .parser import StreamParser
 
 __version__ = get_version(__package__ or "haveibeensquatted")
 __author__ = "Have I Been Squatted"
-__email__ = "hello@haveibeensquatted.com"
+__email__ = "ehlo@haveibeensquatted.com"
 
 __all__ = [
     # API constants

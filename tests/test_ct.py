@@ -45,6 +45,7 @@ async def test_ct_search_parses_has_more_header():
 
     assert response.has_more is True
     assert response.results[0].name == "example.com"
+    assert mock_client.calls[0][0].startswith("https://api.haveibeensquatted.com/v1/ct/search?")
 
 
 @pytest.mark.asyncio
@@ -65,6 +66,9 @@ async def test_ct_search_domains():
 
     assert len(results) == 1
     assert results[0].name == "example.com"
+    assert mock_client.calls[0][0].startswith(
+        "https://api.haveibeensquatted.com/v1/ct/search/domains?"
+    )
 
 
 @pytest.mark.asyncio
@@ -77,6 +81,7 @@ async def test_ct_hydrate():
 
     assert results[0].log_id == 1
     assert results[0].error == "missing"
+    assert mock_client.calls[0][0] == "https://api.haveibeensquatted.com/v1/ct/hydrate?occ=1%3A2"
 
 
 @pytest.mark.asyncio

@@ -55,7 +55,7 @@ async def test_client_initialization():
     client = HaveIBeenSquatted("ak_test_token")
 
     assert client.api_key == "ak_test_token"
-    assert client.base_url == "https://api.haveibeensquatted.com/v1"
+    assert client.base_url == "https://api.haveibeensquatted.com/v2"
     assert client.headers == {
         "Authorization": "Bearer ak_test_token",
         "User-Agent": f"haveibeensquatted-python/{__version__}",
@@ -86,7 +86,7 @@ async def test_client_initialization_with_custom_host():
     """Test client initialization with custom host."""
     client = HaveIBeenSquatted("ak_test_token", host="https://staging-api.example.com")
 
-    assert client.base_url == "https://staging-api.example.com/v1"
+    assert client.base_url == "https://staging-api.example.com/v2"
 
 
 @pytest.mark.asyncio
@@ -120,7 +120,7 @@ def test_client_initialization_empty_token():
 def test_api_constants():
     """Test that API constants are accessible and correct."""
     assert API_HOST == "https://api.haveibeensquatted.com"
-    assert API_VERSION == "v1"
+    assert API_VERSION == "v2"
 
 
 @pytest.mark.asyncio
@@ -145,9 +145,10 @@ async def test_squat_success():
     # Check HTTP client was called correctly
     assert len(mock_client.calls) == 1
     url, headers = mock_client.calls[0]
-    assert url == "https://api.haveibeensquatted.com/v1/lookup/squat/example.com"
+    assert url == "https://api.haveibeensquatted.com/v2/squat/example.com"
     assert headers["Authorization"] == "Bearer ak_test_token"
     assert headers["User-Agent"] == f"haveibeensquatted-python/{__version__}"
+    assert headers["Accept"] == "application/x-ndjson"
 
 
 @pytest.mark.asyncio
@@ -172,8 +173,9 @@ async def test_nxdomain_success():
     # Check HTTP client was called correctly
     assert len(mock_client.calls) == 1
     url, headers = mock_client.calls[0]
-    assert url == "https://api.haveibeensquatted.com/v1/lookup/nxdomain/example.com"
+    assert url == "https://api.haveibeensquatted.com/v2/nxdomain/example.com"
     assert headers["Authorization"] == "Bearer ak_test_token"
+    assert headers["Accept"] == "application/x-ndjson"
 
 
 @pytest.mark.asyncio
@@ -200,8 +202,9 @@ async def test_analyze_success():
     # Check HTTP client was called correctly
     assert len(mock_client.calls) == 1
     url, headers = mock_client.calls[0]
-    assert url == "https://api.haveibeensquatted.com/v1/analyze/example.com"
+    assert url == "https://api.haveibeensquatted.com/v2/analyze/example.com"
     assert headers["Authorization"] == "Bearer ak_test_token"
+    assert headers["Accept"] == "application/x-ndjson"
 
 
 @pytest.mark.asyncio
@@ -295,4 +298,4 @@ async def test_domain_whitespace_handling():
     # Check that whitespace was stripped
     assert len(mock_client.calls) == 1
     url, _ = mock_client.calls[0]
-    assert url == "https://api.haveibeensquatted.com/v1/lookup/squat/example.com"
+    assert url == "https://api.haveibeensquatted.com/v2/squat/example.com"

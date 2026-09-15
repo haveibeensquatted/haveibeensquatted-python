@@ -3,7 +3,7 @@ name = "haveibeensquatted"
 version = "0.1.0"
 description = "Python SDK for Have I Been Squatted API"
 authors = [
-    {name = "Have I Been Squatted", email = "hello@haveibeensquatted.com"}
+    {name = "Have I Been Squatted", email = "ehlo@haveibeensquatted.com"}
 ]
 readme = "README.md"
 license = {text = "MIT"}

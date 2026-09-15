@@ -2,9 +2,9 @@
   "openapi": "3.1.1",
   "info": {
     "title": "Have I Been Squatted API",
-    "version": "v1",
-    "summary": "OpenAPI description for the public v1 API surface represented in this repository.",
-    "description": "This specification documents the HTTP wire format used by the v1 API. Lookup endpoints stream newline-delimited JSON objects. Certificate Transparency and usage endpoints return regular JSON bodies.\n",
+    "version": "v2",
+    "summary": "OpenAPI description for the public API surface represented in this repository.",
+    "description": "This specification documents the HTTP wire format used by the Python SDK. Lookup endpoints use v2 and stream newline-delimited JSON objects. Certificate Transparency and usage endpoints remain on v1 and return regular JSON bodies.\n",
     "contact": {
       "name": "Have I Been Squatted",
       "email": "ehlo@haveibeensquatted.com",
@@ -21,8 +21,8 @@
   },
   "servers": [
     {
-      "url": "https://api.haveibeensquatted.com/v1",
-      "description": "Production v1 API"
+      "url": "https://api.haveibeensquatted.com",
+      "description": "Have I Been Squatted API"
     }
   ],
   "security": [
@@ -45,7 +45,7 @@
     }
   ],
   "paths": {
-    "/lookup/squat/{domain}": {
+    "/v2/squat/{domain}": {
       "get": {
         "tags": [
           "Lookup"
@@ -109,7 +109,7 @@
         }
       }
     },
-    "/lookup/nxdomain/{domain}": {
+    "/v2/nxdomain/{domain}": {
       "get": {
         "tags": [
           "Lookup"
@@ -172,7 +172,7 @@
         }
       }
     },
-    "/analyze/{domain}": {
+    "/v2/analyze/{domain}": {
       "get": {
         "tags": [
           "Lookup"
@@ -231,7 +231,7 @@
         }
       }
     },
-    "/ct/search": {
+    "/v1/ct/search": {
       "get": {
         "tags": [
           "Certificate Transparency"
@@ -318,7 +318,7 @@
         }
       }
     },
-    "/ct/search/domains": {
+    "/v1/ct/search/domains": {
       "get": {
         "tags": [
           "Certificate Transparency"
@@ -380,7 +380,7 @@
         }
       }
     },
-    "/ct/hydrate": {
+    "/v1/ct/hydrate": {
       "get": {
         "tags": [
           "Certificate Transparency"
@@ -454,7 +454,7 @@
         }
       }
     },
-    "/meta/usage": {
+    "/v1/meta/usage": {
       "get": {
         "tags": [
           "Usage"
@@ -650,7 +650,7 @@
     },
     "headers": {
       "XHasMoreValue": {
-        "description": "Present on `/ct/search` responses. `true` means the search found more matching names than were returned in the body for the effective limit.\n",
+        "description": "Present on `/v1/ct/search` responses. `true` means the search found more matching names than were returned in the body for the effective limit.\n",
         "schema": {
           "type": "string",
           "enum": [

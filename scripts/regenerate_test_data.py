@@ -7,9 +7,10 @@ import os
 import urllib.parse
 from pathlib import Path
 
+from haveibeensquatted.client import USER_AGENT
 from haveibeensquatted.http import DefaultHttpClient
 
-API_BASE = "https://api.haveibeensquatted.com/v1/"
+API_BASE = "https://api.haveibeensquatted.com/v2/"
 DEFAULT_DOMAIN = "microsoft.com"
 DEFAULT_OUTPUT = Path("tests/data.jsonl")
 
@@ -35,8 +36,12 @@ async def main() -> None:
     if not api_key:
         raise SystemExit("HIBS_API_KEY is required")
 
-    url = urllib.parse.urljoin(API_BASE, f"lookup/squat/{args.domain}")
-    headers = {"Authorization": f"Bearer {api_key}"}
+    url = urllib.parse.urljoin(API_BASE, f"squat/{args.domain}")
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "User-Agent": USER_AGENT,
+        "Accept": "application/x-ndjson",
+    }
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)

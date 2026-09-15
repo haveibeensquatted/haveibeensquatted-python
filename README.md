@@ -362,6 +362,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- Email: [hello@haveibeensquatted.com](mailto:hello@haveibeensquatted.com)
+- Email: [ehlo@haveibeensquatted.com](mailto:ehlo@haveibeensquatted.com)
 - Documentation: [docs.haveibeensquatted.com](https://docs.haveibeensquatted.com)
 - Issues: [GitHub Issues](https://github.com/haveibeensquatted/haveibeensquatted-python/issues)

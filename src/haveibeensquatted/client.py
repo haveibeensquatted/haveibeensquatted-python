@@ -17,6 +17,7 @@ from .parser import StreamParser
 API_HOST = "https://api.haveibeensquatted.com"
 API_VERSION = "v2"
 _RETAINED_API_VERSION = "v1"
+_NDJSON_MEDIA_TYPE = "application/x-ndjson"
 USER_AGENT = f"haveibeensquatted-python/{get_version('haveibeensquatted')}"
 CT_SEARCH_DOMAINS_MAX_FQDNS_PER_REQUEST = 100
 CT_SEARCH_DOMAINS_MAX_URL_LENGTH = 7000
@@ -232,7 +233,10 @@ class HaveIBeenSquatted:
         Yields:
             Parsed Message objects from the stream
         """
-        async for message in self.parser.parse_stream(self.http_client.stream_get(url, headers)):
+        stream_headers = {**headers, "Accept": _NDJSON_MEDIA_TYPE}
+        async for message in self.parser.parse_stream(
+            self.http_client.stream_get(url, stream_headers)
+        ):
             yield message
 
     async def ct_search(

@@ -148,6 +148,7 @@ async def test_squat_success():
     assert url == "https://api.haveibeensquatted.com/v2/squat/example.com"
     assert headers["Authorization"] == "Bearer ak_test_token"
     assert headers["User-Agent"] == f"haveibeensquatted-python/{__version__}"
+    assert headers["Accept"] == "application/x-ndjson"
 
 
 @pytest.mark.asyncio
@@ -174,6 +175,7 @@ async def test_nxdomain_success():
     url, headers = mock_client.calls[0]
     assert url == "https://api.haveibeensquatted.com/v2/nxdomain/example.com"
     assert headers["Authorization"] == "Bearer ak_test_token"
+    assert headers["Accept"] == "application/x-ndjson"
 
 
 @pytest.mark.asyncio
@@ -202,6 +204,7 @@ async def test_analyze_success():
     url, headers = mock_client.calls[0]
     assert url == "https://api.haveibeensquatted.com/v2/analyze/example.com"
     assert headers["Authorization"] == "Bearer ak_test_token"
+    assert headers["Accept"] == "application/x-ndjson"
 
 
 @pytest.mark.asyncio

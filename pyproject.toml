@@ -39,8 +39,8 @@ packages = ["src/haveibeensquatted"]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
     "jsonschema>=4.20.0",
     "ruff>=0.15.0,<0.16",
     "pre-commit>=3.5.0",
@@ -48,6 +48,12 @@ dev = [
     "pyyaml>=6.0.3",
     "openapi-spec-validator>=0.8.4",
 ]
+
+[tool.uv]
+# 14d dependency cooldown
+exclude-newer = "P14D"
+# OpenAPI validators transitive dependency (GHSA-4xgf-cpjx-pc3j)
+constraint-dependencies = ["pydantic-settings>=2.14.2"]
 
 [tool.semantic_release]
 commit_parser = "conventional"
